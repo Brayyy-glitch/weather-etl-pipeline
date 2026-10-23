@@ -62,11 +62,38 @@ class DataValidationError(Exception):
 
 def validate(df):
     """Check data quality. Raises DataValidationError if anything is wrong."""
+    problems = []
+    measures = ["temperature_c", "rain_mm", "wind_kmh"]
+
+    if df.empty:
+        problems.append("no rows returned")
+    if df[measures].isnull().any().any():
+        problems.append("missing values found")
+    if df.duplicated(subset=["city", "timestamp"]).any():
+        problems.append("duplicate (city, timestamp) rows found")
+    if not df["temperature_c"].between(-50, 60).all():
+        problems.append("temperature outside -50 to 60 C")
+    if (df["rain_mm"] < 0).any():
+        problems.append("negative rainfall")
+    if (df["wind_kmh"] < 0).any():
+        problems.append("negative wind speed")  
+
+    if problems:
+        raise DataValidationError("; ".join(problems))
+    logger.info("Validation passed for %s (%d rows)", df["city"].iloc[0], len(df))
+    return df                      
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     raw = extract("Johannesburg", -26.20227, 28.04363)
     df = transform(raw, "Johannesburg") 
-    print(df.head())
-    print(df.dtypes)
-    print(len(df))
+
+    validate(df)
+
+    bad = df.copy()
+    bad.loc[0, "temperature_c"] = 99
+    bad.loc[1, "rain_mm"] = -5
+    try:
+        validate(bad)
+    except DataValidationError as exc:
+        print("Caught bad data: ", exc)
