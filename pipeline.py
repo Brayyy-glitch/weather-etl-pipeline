@@ -81,7 +81,40 @@ def validate(df):
     if problems:
         raise DataValidationError("; ".join(problems))
     logger.info("Validation passed for %s (%d rows)", df["city"].iloc[0], len(df))
-    return df                      
+    return df  
+
+def load(df, db_path=DB_PATH):
+    """Insert new rows into SQLite. Existing (city, timestamp) are skipped."""
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    rows = [
+        (r.city, r.timestamp.strftime ("%Y-%m-%d" "%H:%M:%S"),
+        r.temperature_c, r.rain_mm, r.wind_kmh)
+        for r in df.itertuples(index=False)
+    ]
+
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS weather (
+                city TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                temperature_c REAL,
+                rain_mm REAL,
+                wind_kmh REAL,
+                PRIMARY KEY (city, timestamp)
+                )
+        """)
+
+        before = conn.total_changes
+        conn.executemany("INSERT OR IGNORE INTO weather VALUES (?, ?, ?, ?, ?)", rows)
+        conn.commit()
+        inserted = conn.total_changes - before
+    finally:
+        conn.close()
+
+    logger.info("Loaded %d new rows (%d already existed)", inserted, len(rows) - inserted)        
+    return inserted
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -89,11 +122,13 @@ if __name__ == "__main__":
     df = transform(raw, "Johannesburg") 
 
     validate(df)
+    load(df)
+    load(df)
 
-    bad = df.copy()
-    bad.loc[0, "temperature_c"] = 99
-    bad.loc[1, "rain_mm"] = -5
-    try:
-        validate(bad)
-    except DataValidationError as exc:
-        print("Caught bad data: ", exc)
+    # bad = df.copy()
+    # bad.loc[0, "temperature_c"] = 99
+    # bad.loc[1, "rain_mm"] = -5
+    # try:
+    #     validate(bad)
+    # except DataValidationError as exc:
+    #     print("Caught bad data: ", exc)
