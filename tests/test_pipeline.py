@@ -14,4 +14,13 @@ def make_df(**overrides):
     data.update(overrides)
     return pd.DataFrame(data)
 
-    
+def test_valid_data_passes():
+    validate(make_df)
+
+def test_impossible_temperature_fails():
+    with pytest.raises(DataValidationError):
+        validate(make_df(temperature_c=[99.0]))
+
+def test_impossible_temperature_fails():
+    with pytest.raises(DataValidationError):
+        validate(make_df(rain_mm=[None]))                
