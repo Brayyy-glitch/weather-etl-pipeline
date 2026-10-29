@@ -121,13 +121,24 @@ def main():
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
     )
+
     total_inserted = 0
+    failed_cities =[]
+
     for city, (lat, lon) in CITIES.items():
-        raw = extract(city, lat, lon)
-        df = transform(raw, city)
-        validate(df)
-        total_inserted += load(df)
-    logger.info("Pipeline finished. %d new rows inserted.", total_inserted)    
+        try:
+            raw = extract(city, lat, lon)
+            df = transform(raw, city)
+            validate(df)
+            total_inserted += load(df)
+        except Exception:
+            logger.exception("Failed for %s, continuing with the next city", city)
+            failed_cities.append(city)
+    logger.info("Finished. %d new rows inserted.", total_inserted)
+
+    if failed_cities:
+        logger.error("Failed cities: %s", ", ".join(failed_cities))
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()    
