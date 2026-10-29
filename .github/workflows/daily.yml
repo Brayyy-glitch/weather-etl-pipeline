@@ -1,0 +1,39 @@
+name: Daily weather pipeline
+
+on: 
+    schedule:
+        - cron: "0 5 * * *" # Runs at 05:00 UTC = 07:00 SAST
+    workflow_dispatch:       # Lets you run it manually from the Github Actions tab
+
+permissions:
+    contents: write          # Needed to commit the database back
+
+jobs:
+    run-pipeline:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            
+            - name: Build image
+              run: docker build -t weather-etl .
+
+            - name: Run tests
+              run: docker run --rm weather-etl pytest 
+            
+            - name: Run pipeline 
+              run: |
+                mkdir -p data
+                docker run --rm -v "$PWD/data:/app/data" weather-etl
+
+            - name: Commit updated database
+              if: always()
+              run: |
+                git config user.name "github-actions" 
+                git config user.email "actions@users.noreply.github.com"
+                git add data/weather.db
+                git diff --staged --quiet || git commit -m "Update weather data"
+                git push 
+                
+
+
+
