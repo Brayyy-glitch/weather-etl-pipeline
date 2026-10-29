@@ -116,19 +116,18 @@ def load(df, db_path=DB_PATH):
     return inserted
 
 
+def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+    )
+    total_inserted = 0
+    for city, (lat, lon) in CITIES.items():
+        raw = extract(city, lat, lon)
+        df = transform(raw, city)
+        validate(df)
+        total_inserted += load(df)
+    logger.info("Pipeline finished. %d new rows inserted.", total_inserted)    
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    raw = extract("Johannesburg", -26.20227, 28.04363)
-    df = transform(raw, "Johannesburg") 
-
-    validate(df)
-    load(df)
-    load(df)
-
-    # bad = df.copy()
-    # bad.loc[0, "temperature_c"] = 99
-    # bad.loc[1, "rain_mm"] = -5
-    # try:
-    #     validate(bad)
-    # except DataValidationError as exc:
-    #     print("Caught bad data: ", exc)
+    main()    
