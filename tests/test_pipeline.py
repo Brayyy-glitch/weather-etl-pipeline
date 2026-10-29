@@ -21,6 +21,13 @@ def test_impossible_temperature_fails():
     with pytest.raises(DataValidationError):
         validate(make_df(temperature_c=[99.0]))
 
-def test_impossible_temperature_fails():
+def test_missing_value_fails():
     with pytest.raises(DataValidationError):
-        validate(make_df(rain_mm=[None]))                
+        validate(make_df(rain_mm=[None]))    
+
+def test_duplicate_rows_fail():
+    with pytest.raises(DataValidationError):
+        validate(pd.concat([make_df(), make_df()]))  
+
+        
+                          
