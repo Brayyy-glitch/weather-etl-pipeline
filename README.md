@@ -385,3 +385,5 @@ Weather data provided by [Open-Meteo.com](https://open-meteo.com/) under the [CC
 Built as a learning project to practise core data engineering skills: extracting data from an API, cleaning and validating it, loading it into a database without duplicates, logging, testing, containerising with Docker, and scheduling with GitHub Actions.
 
 Author: [Ntswaki Mohale](https://github.com/Brayyy-glitch)
+
+WTC-A46UTD3W
